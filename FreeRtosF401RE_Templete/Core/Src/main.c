@@ -124,7 +124,7 @@ int main(void)
   /* USER CODE END 2 */
 
   /* Init scheduler */
-
+  osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -144,12 +144,8 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-
-  xTaskCreate(SenderTask, "Sender Task", 200, NULL, 1, &sender_handle);
-  xTaskCreate(ReceiverTask, "Receive task", 200, NULL, 1, &receiver_handle);
-  xTaskCreate(LedsController, "LedsControllerName", 200, NULL, 1, NULL);
   /* creation of defaultTask */
-
+  //defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -160,7 +156,7 @@ int main(void)
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-
+  //osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */

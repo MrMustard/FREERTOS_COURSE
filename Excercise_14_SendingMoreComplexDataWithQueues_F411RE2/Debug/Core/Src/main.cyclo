@@ -1,0 +1,16 @@
+../Core/Src/main.c:125:5:main	1
+../Core/Src/main.c:214:6:SystemClock_Config	3
+../Core/Src/main.c:260:13:MX_USART2_UART_Init	2
+../Core/Src/main.c:293:13:MX_GPIO_Init	1
+../Core/Src/main.c:349:6:HumidityTask	1
+../Core/Src/main.c:365:6:PressureTask	1
+../Core/Src/main.c:382:6:ReceiverTask	4
+../Core/Src/main.c:445:6:LedsController1	1
+../Core/Src/main.c:458:6:LedsController2	1
+../Core/Src/main.c:474:6:LedsController3	1
+../Core/Src/main.c:492:6:LedsController4	1
+../Core/Src/main.c:512:6:vApplicationIdleHook	1
+../Core/Src/main.c:519:6:SerialUartSendString	1
+../Core/Src/main.c:535:6:StartDefaultTask	1
+../Core/Src/main.c:554:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:571:6:Error_Handler	1
