@@ -1,0 +1,17 @@
+../Core/Src/main.c:135:5:main	16	static
+../Core/Src/main.c:225:6:SystemClock_Config	88	static
+../Core/Src/main.c:271:13:MX_USART2_UART_Init	8	static
+../Core/Src/main.c:304:13:MX_GPIO_Init	48	static
+../Core/Src/main.c:370:6:MenuTask	168	static
+../Core/Src/main.c:398:6:HumidityTask	24	static
+../Core/Src/main.c:414:6:PressureTask	24	static
+../Core/Src/main.c:431:6:ReceiverTask	128	static
+../Core/Src/main.c:494:6:LedsController1	16	static
+../Core/Src/main.c:505:6:LedsController2	16	static
+../Core/Src/main.c:518:6:LedsController3	16	static
+../Core/Src/main.c:533:6:LedsController4	16	static
+../Core/Src/main.c:549:6:vApplicationIdleHook	4	static
+../Core/Src/main.c:556:6:SerialUartSendString	24	static
+../Core/Src/main.c:572:6:StartDefaultTask	16	static
+../Core/Src/main.c:591:6:HAL_TIM_PeriodElapsedCallback	16	static
+../Core/Src/main.c:608:6:Error_Handler	4	static,ignoring_inline_asm
