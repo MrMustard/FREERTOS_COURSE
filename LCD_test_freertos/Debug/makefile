@@ -9,6 +9,7 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include SevenSegmentDisplay/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/subdir.mk
@@ -65,8 +66,8 @@ all: main-build
 main-build: LCD_test_freertos.elf secondary-outputs
 
 # Tool invocations
-LCD_test_freertos.elf LCD_test_freertos.map: $(OBJS) $(USER_OBJS) C:\Users\el_gl\OneDrive\Escritorio\Personal\ Projects\COURSES\FREERTOS\ COURSE\ GIT\LCD_test_freertos\STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "LCD_test_freertos.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\el_gl\OneDrive\Escritorio\Personal Projects\COURSES\FREERTOS COURSE GIT\LCD_test_freertos\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="LCD_test_freertos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+LCD_test_freertos.elf LCD_test_freertos.map: $(OBJS) $(USER_OBJS) C:\Users\joseram\Desktop\Cursos\Curso\ freertos\LCD_test_freertos\STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "LCD_test_freertos.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\joseram\Desktop\Cursos\Curso freertos\LCD_test_freertos\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="LCD_test_freertos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

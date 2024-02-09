@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lcd.h"
+#include "SevenSegmentDisplay.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,6 +69,8 @@ const TickType_t _250ms = pdMS_TO_TICKS(250);
 const TickType_t _100ms = pdMS_TO_TICKS(100);
 const TickType_t _1000ms = pdMS_TO_TICKS(1000);
 const TickType_t _50ms = pdMS_TO_TICKS(50);
+const TickType_t _10ms = pdMS_TO_TICKS(10);
+const TickType_t _2ms = pdMS_TO_TICKS(2);
 
 typedef enum
 {
@@ -87,11 +90,12 @@ static const Data_t xStrcutrToSend [2]=
 		{63,pressure_sensor} // used by pressure sensor
 };
 
-QueueHandle_t sensorQueue;
+QueueHandle_t sensorQueue,dispQueue_1,dispQueue_2;
 
 /*LCD Variables*/
 
 lcd_t lcd_1;
+sevenSegment_t sevenSegmentDisplay;
 
 
 
@@ -110,10 +114,9 @@ void SerialUartSendString(char *ptr);
 void HumidityTask(void *pvParameters);
 void PressureTask(void *pvParameters);
 void ReceiverTask(void *pvParameters);
-void LedsController1(void *pvParameters);
-void LedsController2(void *pvParameters);
-void LedsController3(void *pvParameters);
-void LedsController4(void *pvParameters);
+void LedsController(void *pvParameters);
+void SevenSegmentDisplay(void *pvParameters);
+void sevenSegmentCounter(void *pvParameters);
 
 /*lcd task*/
 void MenuTask(void *pvParameters);
@@ -179,11 +182,13 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   sensorQueue =xQueueCreate(3,sizeof(Data_t));
+  dispQueue_1 = xQueueCreate(3,sizeof(uint8_t));
+  dispQueue_2 = xQueueCreate(3,sizeof(uint8_t));
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
   /* creation of defaultTask */
- // defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  //defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -192,9 +197,10 @@ int main(void)
   //xTaskCreate(PressureTask, "Pressure task", 800, (void *)&(xStrcutrToSend[1]), 2, NULL);
   //xTaskCreate(LedsController1, "LedsController1", 200, NULL, 2, NULL);
  //xTaskCreate(LedsController2, "LedsController2", 200, NULL, 2, NULL);
- //xTaskCreate(LedsController3, "LedsController3", 200, NULL, 2, NULL);
- //xTaskCreate(LedsController4, "LedsController4", 200, NULL, 2, NULL);
+  xTaskCreate(SevenSegmentDisplay, "SevenSegmentDisplayTask", 200, NULL, 2, NULL);
+  xTaskCreate(LedsController, "LedsControllerTask", 200, NULL, 2, NULL);
   xTaskCreate(MenuTask, "Menu Task", 800, NULL, 2, NULL);
+  xTaskCreate(sevenSegmentCounter, "sevenSegmentCounterTask", 200, NULL, 2, NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -202,7 +208,7 @@ int main(void)
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-  //osKernelStart();
+ // osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
@@ -240,7 +246,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 84;
+  RCC_OscInitStruct.PLL.PLLN = 80;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -253,11 +259,11 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV16;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
     Error_Handler();
   }
@@ -373,23 +379,32 @@ void MenuTask(void *pvParameters)
 	  								DISP_RS_Pin, DISP_RW_Pin, DISP_E_Pin,
 	  								DISP_D7_GPIO_Port, DISP_D6_GPIO_Port, DISP_D5_GPIO_Port, DISP_D4_GPIO_Port,
 	  								DISP_D7_Pin, DISP_D6_Pin, DISP_D5_Pin, DISP_D4_Pin, lcd_chr_16x2_mode);
-
+	  	uint16_t contador=0;
+	  	char buffer[20];
 	  	lcd_init(&lcd_1);
 	  	lcd_clear(&lcd_1);
 	  	lcd_set_cursor(&lcd_1, 0, 0);
 	  	lcd_print_string(&lcd_1, "Iniciando");
-	  	uint8_t contador;
-	  	char buffer[20];
+	  	vTaskDelay(_1000ms);
+	  	lcd_clear(&lcd_1);
+
+	  	lcd_set_cursor(&lcd_1, 0, 0);
+	  	lcd_print_string(&lcd_1, "Ejemplo de");
+	  	lcd_set_cursor(&lcd_1, 1, 0);
+	  	lcd_print_string(&lcd_1, "FREERTOS");
+	  	vTaskDelay(_1000ms);
+	  	lcd_clear(&lcd_1);
+
 	while(1)
 	{
 		lcd_set_cursor(&lcd_1, 0, 0);
-		lcd_print_string(&lcd_1, "FREERTOS  ");
+		lcd_print_string(&lcd_1, "RTOS");
 		//HAL_GPIO_TogglePin(led_azul_GPIO_Port,led_azul_Pin);
 		contador++;
-		sprintf(buffer,"Count:%03i",contador);
+		sprintf(buffer,"Count:%05i",contador);
 		lcd_set_cursor(&lcd_1, 1, 0);
 		lcd_print_string(&lcd_1, buffer);
-		vTaskDelay(_1000ms);
+		vTaskDelay(_10ms);
 
 	}
 
@@ -491,57 +506,113 @@ void ReceiverTask(void *pvParameters) {
 
 
 
-void LedsController1(void *pvParameters)
+void LedsController(void *pvParameters)
 {
+
+
 		while(1)
 	{
 
+			HAL_GPIO_WritePin(led_azul_GPIO_Port, led_azul_Pin, GPIO_PIN_SET);
+			vTaskDelay(_100ms);
+			HAL_GPIO_WritePin(led_amarillo_GPIO_Port, led_amarillo_Pin, GPIO_PIN_SET);
+			vTaskDelay(_100ms);
+			HAL_GPIO_WritePin(led_verde_GPIO_Port, led_verde_Pin, GPIO_PIN_SET);
+			vTaskDelay(_100ms);
+			HAL_GPIO_WritePin(led_rojo_GPIO_Port, led_rojo_Pin, GPIO_PIN_SET);
+			vTaskDelay(_100ms);
+			HAL_GPIO_WritePin(led_azul_GPIO_Port, led_azul_Pin, GPIO_PIN_RESET);
+			vTaskDelay(_100ms);
+			HAL_GPIO_WritePin(led_amarillo_GPIO_Port, led_amarillo_Pin, GPIO_PIN_RESET);
+			vTaskDelay(_100ms);
+			HAL_GPIO_WritePin(led_verde_GPIO_Port, led_verde_Pin, GPIO_PIN_RESET);
+			vTaskDelay(_100ms);
+			HAL_GPIO_WritePin(led_rojo_GPIO_Port, led_rojo_Pin, GPIO_PIN_RESET);
+			vTaskDelay(_100ms);
+
+	}
+
+}
+void sevenSegmentCounter(void *pvParameters)
+{
+	uint8_t counter_1=0;
+	uint8_t counter_2=7;
+	BaseType_t qstatus;
+	while(1)
+	{
+		qstatus=xQueueSend(dispQueue_1,&counter_1,_10ms);
+		qstatus=xQueueSend(dispQueue_2,&counter_2,_10ms);
+
+
+		vTaskDelay(_50ms);
+		counter_1++;
+		counter_2++;
+				if(counter_1>=9 )
+				{
+
+					counter_1=0;
+				}
+
+				if(counter_2>=9 )
+				{
+
+					counter_2=0;
+				}
+
+				vTaskDelay(_50ms);
+				HAL_GPIO_TogglePin(STATUS_LED_1_GPIO_Port, STATUS_LED_1_Pin);
+
+
+
+
+	}
+
+
+
+}
+
+void SevenSegmentDisplay(void *pvParameters)
+{
+
+	uint8_t value_received_1=0;
+	uint8_t value_received_2=0;
+	BaseType_t qstatus;
+	sevenSegmentDisplay = SevenSegment_ctor(SSD_A_GPIO_Port, SSD_B_GPIO_Port, SSD_C_GPIO_Port,
+			SSD_D_GPIO_Port, SSD_E_GPIO_Port, SSD_F_GPIO_Port,SSD_G_GPIO_Port, SSD_DP_GPIO_Port,
+			SSD_D1_GPIO_Port, SSD_D2_GPIO_Port, SSD_A_Pin, SSD_B_Pin, SSD_C_Pin, SSD_D_Pin, SSD_E_Pin,
+			SSD_F_Pin, SSD_G_Pin, SSD_DP_Pin, SSD_D1_Pin, SSD_D2_Pin, sevenSegmentCommonCathode, 10);
+
+	while(1)
+	{
+
+		qstatus=xQueueReceive(dispQueue_1, &value_received_1, 0);
+
+				if(qstatus == pdPASS)
+				{
+
+
+				}
+
+				qstatus=xQueueReceive(dispQueue_2, &value_received_2, 0);
+						if(qstatus == pdPASS)
+						{
+
+
+						}
+
+		SevenSegmentDisplay_s1(&sevenSegmentDisplay, value_received_1);
+		vTaskDelay(_2ms);
+		SevenSegmentDisplay_off(&sevenSegmentDisplay);
+		SevenSegmentDisplay_s2(&sevenSegmentDisplay, value_received_2);
+		vTaskDelay(_2ms);
+		SevenSegmentDisplay_off(&sevenSegmentDisplay);
 
 
 	}
 
 }
 
-void LedsController2(void *pvParameters)
-{
-		while(1)
-	{
 
-
-
-
-
-	}
-
-}
-
-void LedsController3(void *pvParameters)
-{
-		while(1)
-	{
-
-
-
-
-
-
-
-	}
-
-}
-
-void LedsController4(void *pvParameters)
-{
-		while(1)
-	{
-
-
-
-
-
-	}
-
-}
 
 
 
